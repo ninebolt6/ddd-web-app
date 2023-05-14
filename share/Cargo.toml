@@ -10,4 +10,4 @@ name = "share"
 
 [dependencies]
 actix-web = { workspace = true }
-derive_more = { version = "0.99", features = ["display", "error"] }
+thiserror = "1.0"

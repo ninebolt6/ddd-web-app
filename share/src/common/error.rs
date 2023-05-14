@@ -3,33 +3,21 @@ use actix_web::{
     http::{header::ContentType, StatusCode},
     HttpResponse,
 };
-use derive_more::{Display, Error};
+use thiserror::Error;
 
-#[derive(Debug, Display, Error)]
+#[derive(Error, Debug)]
 pub enum APIError {
-    #[display(fmt = "not found")]
-    NotFound,
+    #[error("{0}")]
+    NotFound(String),
 
-    #[display(fmt = "invalid argument")]
-    InvalidArgument,
+    #[error("{0}")]
+    InvalidArgument(String),
 
-    #[display(fmt = "invalid state")]
-    InvalidState,
+    #[error("{0}")]
+    InvalidState(String),
 
-    #[display(fmt = "unique constraint violation")]
-    UniqueConstraint,
-
-    #[display(fmt = "unauthorized")]
-    Unauthorized,
-
-    #[display(fmt = "infrastructure error")]
-    InfrastructureError,
-
-    #[display(fmt = "authentication error")]
-    AuthenticationError,
-
-    #[display(fmt = "unexpected behavior")]
-    LogicError,
+    #[error("{0}")]
+    Unauthorized(String),
 }
 
 impl error::ResponseError for APIError {
@@ -41,14 +29,10 @@ impl error::ResponseError for APIError {
 
     fn status_code(&self) -> StatusCode {
         match *self {
-            APIError::AuthenticationError => StatusCode::UNAUTHORIZED,
-            APIError::InvalidArgument => StatusCode::BAD_REQUEST,
-            APIError::InfrastructureError => StatusCode::INTERNAL_SERVER_ERROR,
-            APIError::InvalidState => StatusCode::UNPROCESSABLE_ENTITY,
-            APIError::LogicError => StatusCode::INTERNAL_SERVER_ERROR,
-            APIError::NotFound => StatusCode::NOT_FOUND,
-            APIError::Unauthorized => StatusCode::UNAUTHORIZED,
-            APIError::UniqueConstraint => StatusCode::INTERNAL_SERVER_ERROR,
+            APIError::NotFound(_) => StatusCode::NOT_FOUND,
+            APIError::InvalidArgument(_) => StatusCode::BAD_REQUEST,
+            APIError::InvalidState(_) => StatusCode::UNPROCESSABLE_ENTITY,
+            APIError::Unauthorized(_) => StatusCode::UNAUTHORIZED,
         }
     }
 }

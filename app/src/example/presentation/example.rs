@@ -34,3 +34,28 @@ async fn post_hello(path: web::Path<String>, body: web::Json<PostHelloRequest>) 
     }))
 }
 
+#[cfg(test)]
+mod tests {
+    use actix_web::{body::to_bytes, http::StatusCode, web};
+
+    use super::*;
+
+    #[actix_web::test]
+    async fn test_post_hello() {
+        let path = web::Path::from("test".to_string());
+        let body = web::Json(PostHelloRequest {
+            user_name: "test name".to_string(),
+        });
+
+        let resp = post_hello(path, body).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::OK);
+        let resp_body = to_bytes(resp.into_body()).await.unwrap();
+        assert_eq!(
+            serde_json::from_slice::<PostHelloResponse>(&resp_body).unwrap(),
+            PostHelloResponse {
+                message: "Hello, test name!".to_string(),
+                text: "testtest".to_string(),
+            }
+        );
+    }
+}

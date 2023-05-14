@@ -243,6 +243,7 @@ dependencies = [
  "actix-web",
  "serde",
  "serde_json",
+ "share",
 ]
 
 [[package]]
@@ -878,6 +879,14 @@ dependencies = [
  "cfg-if",
  "cpufeatures",
  "digest",
+]
+
+[[package]]
+name = "share"
+version = "0.1.0"
+dependencies = [
+ "actix-web",
+ "derive_more",
 ]
 
 [[package]]

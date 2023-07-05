@@ -1,6 +1,6 @@
 use actix_web::{web, HttpResponse};
 use serde::{Deserialize, Serialize};
-use share::common::result::ResponseResult;
+use shared::common::result::ResponseResult;
 
 pub fn example_routes(cfg: &mut web::ServiceConfig) {
     cfg.service(web::resource("/hello").route(web::get().to(hello)))

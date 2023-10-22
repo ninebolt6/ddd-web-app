@@ -11,5 +11,6 @@ name = "shared"
 [dependencies]
 actix-web = { workspace = true }
 async-trait = "0.1"
+serde = { workspace = true }
 thiserror = "1.0"
 sqlx = { version = "0.7", features = [ "tls-native-tls", "postgres", "uuid", "chrono" ] }

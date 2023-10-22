@@ -18,6 +18,9 @@ pub enum APIError {
 
     #[error("{0}")]
     Unauthorized(String),
+
+    #[error("{0}")]
+    InfrastructureError(String),
 }
 
 impl error::ResponseError for APIError {
@@ -33,6 +36,7 @@ impl error::ResponseError for APIError {
             APIError::InvalidArgument(_) => StatusCode::BAD_REQUEST,
             APIError::InvalidState(_) => StatusCode::UNPROCESSABLE_ENTITY,
             APIError::Unauthorized(_) => StatusCode::UNAUTHORIZED,
+            APIError::InfrastructureError(_) => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
 }

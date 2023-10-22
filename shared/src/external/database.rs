@@ -1,10 +1,13 @@
+use std::future::Future;
 use std::time::Duration;
 
 use async_trait::async_trait;
 use sqlx::postgres::PgPoolOptions;
-use sqlx::{Error, PgPool, Postgres, Transaction};
+use sqlx::{Error as DbError, PgPool, Postgres, Transaction};
 
-async fn connect() -> Result<PgPool, Error> {
+use crate::common::error::APIError;
+
+async fn connect() -> Result<PgPool, DbError> {
     PgPoolOptions::new()
         .min_connections(1)
         .max_connections(10)
@@ -14,14 +17,15 @@ async fn connect() -> Result<PgPool, Error> {
 }
 
 #[async_trait]
-pub trait ConnectionFactory: Send + Sync + Clone {
-    async fn acquire<F, T>(block: F) -> Result<T, Error>
+pub trait ConnectionFactory: Clone {
+    async fn acquire<F, T, Fut>(&self, block: F) -> Result<T, APIError>
     where
-        F: Send + Fn(&PgPool) -> Result<T, Error>;
+        F: Fn(PgPool) -> Fut + Send + Sync,
+        Fut: Future<Output = Result<T, APIError>> + Send;
 
-    async fn begin_transaction<F, T>(block: F) -> Result<T, Error>
+    async fn begin_transaction<F, T>(&self, block: F) -> Result<T, APIError>
     where
-        F: Send + Fn(&Transaction<'_, Postgres>) -> Result<T, Error>,
+        F: Send + Fn(&Transaction<'_, Postgres>) -> Result<T, APIError>,
         T: Send;
 }
 
@@ -35,26 +39,40 @@ impl Clone for ConnectionFactoryImpl {
 
 #[async_trait]
 impl ConnectionFactory for ConnectionFactoryImpl {
-    async fn acquire<F, T>(block: F) -> Result<T, Error>
+    async fn acquire<F, T, Fut>(&self, block: F) -> Result<T, APIError>
     where
-        F: Send + Fn(&PgPool) -> Result<T, Error>,
+        F: Fn(PgPool) -> Fut + Send + Sync,
+        Fut: Future<Output = Result<T, APIError>> + Send,
     {
-        let pool = connect().await?;
-        let result = block(&pool)?;
+        let pool = connect()
+            .await
+            .map_err(|e| APIError::InfrastructureError(e.to_string()))?;
+
+        let result = block(pool)
+            .await
+            .map_err(|e| APIError::InfrastructureError(e.to_string()))?;
 
         Ok(result)
     }
 
-    async fn begin_transaction<F, T>(block: F) -> Result<T, Error>
+    async fn begin_transaction<F, T>(&self, block: F) -> Result<T, APIError>
     where
-        F: Send + Fn(&Transaction<'_, Postgres>) -> Result<T, Error>,
+        F: Send + Fn(&Transaction<'_, Postgres>) -> Result<T, APIError>,
         T: Send,
     {
-        let pool = connect().await?;
-        let transaction = pool.begin().await?;
+        let pool = connect()
+            .await
+            .map_err(|e| APIError::InfrastructureError(e.to_string()))?;
+        let transaction = pool
+            .begin()
+            .await
+            .map_err(|e| APIError::InfrastructureError(e.to_string()))?;
 
         let result = block(&transaction)?; // NOTE: ここでエラーが起きたらスコープを抜けた時にロールバックされる
-        transaction.commit().await?;
+        transaction
+            .commit()
+            .await
+            .map_err(|e| APIError::InfrastructureError(e.to_string()))?;
 
         Ok(result)
     }

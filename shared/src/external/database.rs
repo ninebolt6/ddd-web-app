@@ -23,9 +23,9 @@ pub trait ConnectionFactory {
         F: FnOnce(PgPool) -> Fut + Send + Sync,
         Fut: Future<Output = Result<T, APIError>> + Send;
 
-    async fn begin_transaction<'a, F, T, Fut>(&self, block: F) -> Result<T, APIError>
+    async fn begin_transaction<F, T, Fut>(&self, block: F) -> Result<T, APIError>
     where
-        F: FnOnce(Transaction<'a, Postgres>) -> Fut + Send + Sync,
+        F: FnOnce(&mut Transaction<'_, Postgres>) -> Fut + Send + Sync,
         Fut: Future<Output = Result<T, APIError>> + Send,
         T: Send;
 }
@@ -54,24 +54,24 @@ impl ConnectionFactory for ConnectionFactoryImpl {
         Ok(result)
     }
 
-    async fn begin_transaction<'a, F, T, Fut>(&self, block: F) -> Result<T, APIError>
+    async fn begin_transaction<F, T, Fut>(&self, block: F) -> Result<T, APIError>
     where
-        F: FnOnce(Transaction<'a, Postgres>) -> Fut + Send + Sync,
+        F: FnOnce(&mut Transaction<'_, Postgres>) -> Fut + Send + Sync,
         Fut: Future<Output = Result<T, APIError>> + Send,
         T: Send,
     {
-        let transaction = self
+        let mut transaction = self
             .pool
             .begin()
             .await
             .map_err(|e| APIError::InfrastructureError(e.to_string()))?;
 
-        let result = block(transaction).await?; // NOTE: ここでエラーが起きたらスコープを抜けた時にロールバックされる
+        let result = block(&mut transaction).await?; // NOTE: ここでエラーが起きたらスコープを抜けた時にロールバックされる
 
-        // transaction
-        //     .commit()
-        //     .await
-        //     .map_err(|e| APIError::InfrastructureError(e.to_string()))?;
+        transaction
+            .commit()
+            .await
+            .map_err(|e| APIError::InfrastructureError(e.to_string()))?;
 
         Ok(result)
     }

@@ -18,9 +18,12 @@ impl GetUserInteractor {
             .acquire(|pool| async move {
                 let user_repository = UserRepositoryImpl {};
                 let user = user_repository.find_by_id(id, &pool).await?;
+
                 Ok(user)
             })
-            .await?;
+            .await?
+            .ok_or(APIError::NotFound("Not Found".to_string()))?;
+
         Ok(user)
     }
 }

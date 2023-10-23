@@ -12,7 +12,7 @@ async fn connect() -> Result<PgPool, DbError> {
         .min_connections(1)
         .max_connections(10)
         .acquire_timeout(Duration::from_secs(8))
-        .connect("postgresql://root:password@localhost:3306/database")
+        .connect("postgresql://app:appUserPassword@localhost:5432/postgres")
         .await
 }
 

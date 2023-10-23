@@ -18,16 +18,15 @@ impl CreateUserInteractor {
     where
         CF: ConnectionFactory,
     {
-        let user = connection_factory
-            .begin_transaction(|conn| async move {
+        connection_factory
+            .begin_transaction(|mut conn| async move {
                 let id = Uuid::new_v4();
                 let entity = UserEntity::new(id, user_name.to_string());
                 let user_repository = UserRepositoryImpl {};
-                let user = user_repository.create(entity, conn).await?;
 
-                Ok(user)
+                user_repository.create(entity, conn.as_mut()).await
             })
             .await?;
-        Ok(user)
+        Ok(())
     }
 }

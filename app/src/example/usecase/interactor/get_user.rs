@@ -19,9 +19,9 @@ impl GetUserInteractor {
         CF: ConnectionFactory,
     {
         let user = connection_factory
-            .acquire(|conn| async {
+            .acquire(|conn| async move {
                 let user_repository = UserRepositoryImpl {};
-                user_repository.find_by_id(id, conn).await
+                user_repository.find_by_id(id, &conn).await
             })
             .await?
             .ok_or(APIError::NotFound("Not Found".to_string()))?;

@@ -3,7 +3,7 @@ use std::time::Duration;
 
 use async_trait::async_trait;
 use sqlx::postgres::PgPoolOptions;
-use sqlx::{Error as DbError, PgConnection, PgPool};
+use sqlx::{Error as DbError, PgPool, Postgres, Transaction};
 
 use crate::common::error::APIError;
 
@@ -18,14 +18,14 @@ pub async fn connect_db() -> Result<PgPool, DbError> {
 
 #[async_trait]
 pub trait ConnectionFactory {
-    async fn acquire<'a, F, T, Fut>(&self, block: F) -> Result<T, APIError>
+    async fn acquire<F, T, Fut>(&self, block: F) -> Result<T, APIError>
     where
-        F: FnOnce(&mut PgConnection) -> Fut + Send + Sync,
+        F: FnOnce(PgPool) -> Fut + Send + Sync,
         Fut: Future<Output = Result<T, APIError>> + Send;
 
-    async fn begin_transaction<F, T, Fut>(&self, block: F) -> Result<T, APIError>
+    async fn begin_transaction<'a, F, T, Fut>(&self, block: F) -> Result<T, APIError>
     where
-        F: FnOnce(&mut PgConnection) -> Fut + Send + Sync,
+        F: FnOnce(Transaction<'a, Postgres>) -> Fut + Send + Sync,
         Fut: Future<Output = Result<T, APIError>> + Send,
         T: Send;
 }
@@ -42,41 +42,36 @@ impl ConnectionFactoryImpl {
 
 #[async_trait]
 impl ConnectionFactory for ConnectionFactoryImpl {
-    async fn acquire<'a, F, T, Fut>(&self, block: F) -> Result<T, APIError>
+    async fn acquire<F, T, Fut>(&self, block: F) -> Result<T, APIError>
     where
-        F: FnOnce(&mut PgConnection) -> Fut + Send + Sync,
+        F: FnOnce(PgPool) -> Fut + Send + Sync,
         Fut: Future<Output = Result<T, APIError>> + Send,
     {
-        let mut conn = self
-            .pool
-            .acquire()
-            .await
-            .map_err(|e| APIError::InfrastructureError(e.to_string()))?;
-
-        let result = block(conn.as_mut())
+        let result = block(self.pool.clone())
             .await
             .map_err(|e| APIError::InfrastructureError(e.to_string()))?;
 
         Ok(result)
     }
 
-    async fn begin_transaction<F, T, Fut>(&self, block: F) -> Result<T, APIError>
+    async fn begin_transaction<'a, F, T, Fut>(&self, block: F) -> Result<T, APIError>
     where
-        F: FnOnce(&mut PgConnection) -> Fut + Send + Sync,
+        F: FnOnce(Transaction<'a, Postgres>) -> Fut + Send + Sync,
         Fut: Future<Output = Result<T, APIError>> + Send,
         T: Send,
     {
-        let mut transaction = self
+        let transaction = self
             .pool
             .begin()
             .await
             .map_err(|e| APIError::InfrastructureError(e.to_string()))?;
 
-        let result = block(&mut transaction).await?; // NOTE: ここでエラーが起きたらスコープを抜けた時にロールバックされる
-        transaction
-            .commit()
-            .await
-            .map_err(|e| APIError::InfrastructureError(e.to_string()))?;
+        let result = block(transaction).await?; // NOTE: ここでエラーが起きたらスコープを抜けた時にロールバックされる
+
+        // transaction
+        //     .commit()
+        //     .await
+        //     .map_err(|e| APIError::InfrastructureError(e.to_string()))?;
 
         Ok(result)
     }

@@ -6,10 +6,7 @@ use actix_web::{
 };
 use app::route::{auth_routes, public_routes};
 use serde_json::Value;
-use shared::{
-    common::injector::Injector,
-    external::database::{connect_db, ConnectionFactoryImpl},
-};
+use shared::external::database::{connect_db, ConnectionFactoryImpl};
 
 #[actix_web::test]
 async fn test_get_user() {
@@ -29,7 +26,7 @@ async fn test_get_user() {
     .await;
 
     let req = test::TestRequest::get()
-        .uri(&format!("/api/users/ca1c5eb2-a43a-4cef-80fc-f9abe1623785"))
+        .uri("/api/users/ca1c5eb2-a43a-4cef-80fc-f9abe1623785")
         .to_request();
 
     // act

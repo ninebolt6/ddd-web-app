@@ -1,8 +1,11 @@
 use crate::external::database::ConnectionFactory;
 
+pub use sqlx::Database;
+pub use sqlx::Postgres;
+
 pub struct Injector<CF>
 where
-    CF: ConnectionFactory,
+    CF: ConnectionFactory + 'static,
 {
     connection_factory: CF,
 }

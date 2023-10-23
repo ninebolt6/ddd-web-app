@@ -6,11 +6,15 @@ use actix_web::{
 };
 use app::route::{auth_routes, public_routes};
 use serde_json::Value;
-use shared::{common::injector::Injector, external::database::ConnectionFactoryImpl};
+use shared::{
+    common::injector::Injector,
+    external::database::{connect_db, ConnectionFactoryImpl},
+};
 
 #[actix_web::test]
 async fn test_get_user() {
     // arrange
+    let pool = connect_db().await.unwrap();
     let app = test::init_service(
         App::new()
             .service(
@@ -20,7 +24,7 @@ async fn test_get_user() {
                         .configure(auth_routes),
                 ),
             )
-            .app_data(Data::new(Injector::new(ConnectionFactoryImpl))),
+            .app_data(Data::new(ConnectionFactoryImpl::new(pool))),
     )
     .await;
 

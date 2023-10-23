@@ -7,10 +7,12 @@ use actix_web::{
     web::{self, Data},
     App, HttpServer,
 };
-use shared::{common::injector::Injector, external::database::ConnectionFactoryImpl};
+use shared::external::database::{connect_db, ConnectionFactoryImpl};
 
 pub async fn run_server() -> Result<(), std::io::Error> {
-    HttpServer::new(|| {
+    let pool = connect_db().await.unwrap();
+
+    HttpServer::new(move || {
         App::new()
             .service(
                 web::scope("/api").configure(route::public_routes).service(
@@ -19,7 +21,7 @@ pub async fn run_server() -> Result<(), std::io::Error> {
                         .configure(route::auth_routes),
                 ),
             )
-            .app_data(Data::new(Injector::new(ConnectionFactoryImpl)))
+            .app_data(Data::new(ConnectionFactoryImpl::new(pool.clone())))
     })
     .bind(("127.0.0.1", 8080))?
     .run()

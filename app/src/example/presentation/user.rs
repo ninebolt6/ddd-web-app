@@ -18,7 +18,7 @@ pub fn example_routes(cfg: &mut web::ServiceConfig) {
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Eq, Debug)]
-struct GetUserResponse {
+pub struct GetUserResponse {
     id: Uuid,
     name: String,
 }
@@ -39,7 +39,7 @@ async fn get_user<CF: ConnectionFactory>(
 
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
-struct CreateUserRequest {
+pub struct CreateUserRequest {
     user_name: String,
 }
 

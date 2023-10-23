@@ -3,6 +3,7 @@ members = [
   "app",
   "shared",
 ]
+resolver = "2"
 
 [workspace.dependencies]
 actix-web = "4"

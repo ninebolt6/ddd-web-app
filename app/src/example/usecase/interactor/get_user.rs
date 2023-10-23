@@ -8,11 +8,12 @@ use shared::{
     },
     external::database::ConnectionFactory,
 };
+use uuid::Uuid;
 
 pub struct GetUserInteractor {}
 
 impl GetUserInteractor {
-    pub async fn execute(id: i32, db: &impl ConnectionFactory) -> Result<UserEntity, APIError> {
+    pub async fn execute(id: Uuid, db: &impl ConnectionFactory) -> Result<UserEntity, APIError> {
         let user = db
             .acquire(|pool| async move {
                 let user_repository = UserRepositoryImpl {};

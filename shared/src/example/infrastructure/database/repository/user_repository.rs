@@ -1,21 +1,22 @@
 use async_trait::async_trait;
 use sqlx::{FromRow, PgPool};
+use uuid::Uuid;
 
 use crate::{common::error::APIError, example::domain::entity::user::UserEntity};
 
 #[async_trait]
 pub trait UserRepository {
-    async fn find_by_id(&self, id: i32, pool: &PgPool) -> Result<UserEntity, APIError>;
+    async fn find_by_id(&self, id: Uuid, pool: &PgPool) -> Result<UserEntity, APIError>;
 }
 
 pub struct UserRepositoryImpl {}
 
 #[async_trait]
 impl UserRepository for UserRepositoryImpl {
-    async fn find_by_id(&self, id: i32, pool: &PgPool) -> Result<UserEntity, APIError> {
+    async fn find_by_id(&self, id: Uuid, pool: &PgPool) -> Result<UserEntity, APIError> {
         #[derive(FromRow)]
         struct UserRow {
-            id: i32,
+            id: Uuid,
             name: String,
         }
 

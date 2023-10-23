@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use sqlx::{Connection, Executor, FromRow, PgConnection};
+use sqlx::{Executor, FromRow, PgConnection};
 use uuid::Uuid;
 
 use crate::{common::error::APIError, example::domain::entity::user::UserEntity};

@@ -7,6 +7,7 @@ use crate::{common::error::APIError, example::domain::entity::user::UserEntity};
 #[async_trait]
 pub trait UserRepository {
     async fn find_by_id(&self, id: Uuid, pool: &PgPool) -> Result<Option<UserEntity>, APIError>;
+    async fn create(&self, entity: UserEntity, pool: &PgPool) -> Result<(), APIError>;
 }
 
 pub struct UserRepositoryImpl {}
@@ -28,5 +29,15 @@ impl UserRepository for UserRepositoryImpl {
 
         let user = user_row.map(|row| UserEntity::new(row.id, row.name));
         Ok(user)
+    }
+
+    async fn create(&self, entity: UserEntity, pool: &PgPool) -> Result<(), APIError> {
+        sqlx::query("INSERT INTO users (id, name) VALUES ($1, $2)")
+            .bind(entity.id)
+            .bind(entity.name)
+            .execute(pool)
+            .await
+            .map_err(|e| APIError::InfrastructureError(e.to_string()))?;
+        Ok(())
     }
 }

@@ -19,12 +19,16 @@ impl CreateUserInteractor {
         CF: ConnectionFactory,
     {
         connection_factory
-            .begin_transaction(|conn| async move {
+            .acquire(|pool| async move {
+                let mut conn = pool.acquire().await.map_err(|e| {
+                    APIError::InfrastructureError(format!("Failed to acquire connection: {}", e))
+                })?;
+
                 let id = Uuid::new_v4();
                 let entity = UserEntity::new(id, user_name.to_string());
                 let user_repository = UserRepositoryImpl {};
 
-                user_repository.create(entity, conn).await?;
+                user_repository.create(entity, &mut conn).await?;
 
                 Ok(())
             })

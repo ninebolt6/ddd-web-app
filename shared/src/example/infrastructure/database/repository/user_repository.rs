@@ -1,14 +1,16 @@
 use async_trait::async_trait;
-use sqlx::{Executor, FromRow, PgConnection};
+use sqlx::{FromRow, PgConnection};
 use uuid::Uuid;
 
 use crate::{common::error::APIError, example::domain::entity::user::UserEntity};
 
 #[async_trait]
 pub trait UserRepository {
-    async fn find_by_id<'a, T>(&self, id: Uuid, conn: T) -> Result<Option<UserEntity>, APIError>
-    where
-        T: Executor<'a, Database = sqlx::Postgres>;
+    async fn find_by_id(
+        &self,
+        id: Uuid,
+        conn: &mut PgConnection,
+    ) -> Result<Option<UserEntity>, APIError>;
     async fn create(&self, entity: UserEntity, conn: &mut PgConnection) -> Result<(), APIError>;
 }
 
@@ -16,10 +18,11 @@ pub struct UserRepositoryImpl {}
 
 #[async_trait]
 impl UserRepository for UserRepositoryImpl {
-    async fn find_by_id<'a, T>(&self, id: Uuid, conn: T) -> Result<Option<UserEntity>, APIError>
-    where
-        T: Executor<'a, Database = sqlx::Postgres>,
-    {
+    async fn find_by_id(
+        &self,
+        id: Uuid,
+        conn: &mut PgConnection,
+    ) -> Result<Option<UserEntity>, APIError> {
         #[derive(FromRow)]
         struct UserRow {
             id: Uuid,

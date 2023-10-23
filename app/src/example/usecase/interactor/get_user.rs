@@ -19,9 +19,13 @@ impl GetUserInteractor {
         CF: ConnectionFactory,
     {
         let user = connection_factory
-            .acquire(|conn| async move {
+            .acquire(|pool| async move {
+                let mut conn = pool.acquire().await.map_err(|e| {
+                    APIError::InfrastructureError(format!("Failed to acquire connection: {}", e))
+                })?;
+
                 let user_repository = UserRepositoryImpl {};
-                user_repository.find_by_id(id, &conn).await
+                user_repository.find_by_id(id, &mut conn).await
             })
             .await?
             .ok_or(APIError::NotFound("Not Found".to_string()))?;

@@ -1,6 +1,6 @@
 use actix_web::web;
 
-use crate::example::presentation::example::example_routes;
+use crate::example::presentation::user::example_routes;
 
 pub fn public_routes(cfg: &mut web::ServiceConfig) {
     #[cfg(debug_assertions)]

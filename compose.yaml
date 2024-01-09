@@ -1,0 +1,11 @@
+services:
+  test-db:
+    image: postgres:16
+    ports:
+      - 55432:5432
+    environment:
+      - POSTGRES_USER=testUser
+      - POSTGRES_PASSWORD=testUserPassword
+      - POSTGRES_DB=postgres
+    volumes:
+      - ./resources/database:/docker-entrypoint-initdb.d

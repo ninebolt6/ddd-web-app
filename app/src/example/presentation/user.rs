@@ -1,10 +1,11 @@
 use actix_web::{web, HttpResponse};
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
+
 use shared::{
     common::result::ResponseResult,
     external::database::{ConnectionFactory, ConnectionFactoryImpl},
 };
-use uuid::Uuid;
 
 use crate::example::usecase::interactor::{
     create_user::CreateUserInteractor, get_user::GetUserInteractor,
@@ -57,53 +58,51 @@ where
     Ok(HttpResponse::Created().finish())
 }
 
-// #[cfg(test)]
-// mod tests {
-//     use std::str::FromStr;
+#[cfg(test)]
+mod tests {
+    use std::str::FromStr;
 
-//     use actix_web::{
-//         body::to_bytes,
-//         http::StatusCode,
-//         web::{self, Data},
-//     };
+    use actix_web::{
+        body::to_bytes,
+        http::StatusCode,
+        web::{self, Data},
+    };
 
-//     use super::*;
+    use shared::external::database::connect_test_db;
 
-//     #[actix_web::test]
-//     async fn test_get_user() {
-//         let id = Uuid::from_str("ca1c5eb2-a43a-4cef-80fc-f9abe1623785").unwrap();
-//         let path = web::Path::from(id);
+    use super::*;
 
-//         let resp = get_user::<ConnectionFactoryImpl>(
-//             path,
-//             Data::new(Injector::new(ConnectionFactoryImpl)),
-//         )
-//         .await
-//         .unwrap();
+    // #[actix_web::test]
+    // async fn test_get_user() {
+    //     let id = Uuid::from_str("ca1c5eb2-a43a-4cef-80fc-f9abe1623785").unwrap();
+    //     let path = web::Path::from(id);
+    //     let test_connection_factory = ConnectionFactoryImpl::new(connect_test_db().await.unwrap());
+    //
+    //     let resp = get_user::<ConnectionFactoryImpl>(path, Data::new(test_connection_factory))
+    //         .await
+    //         .unwrap();
+    //
+    //     assert_eq!(resp.status(), StatusCode::OK);
+    //     let resp_body = to_bytes(resp.into_body()).await.unwrap();
+    //     assert_eq!(
+    //         serde_json::from_slice::<GetUserResponse>(&resp_body).unwrap(),
+    //         GetUserResponse {
+    //             id,
+    //             name: "test name".to_string(),
+    //         }
+    //     );
+    // }
 
-//         assert_eq!(resp.status(), StatusCode::OK);
-//         let resp_body = to_bytes(resp.into_body()).await.unwrap();
-//         assert_eq!(
-//             serde_json::from_slice::<GetUserResponse>(&resp_body).unwrap(),
-//             GetUserResponse {
-//                 id: id,
-//                 name: "test name".to_string(),
-//             }
-//         );
-//     }
+    #[actix_web::test]
+    async fn test_create_user() {
+        let body = web::Json(CreateUserRequest {
+            user_name: "test name".to_string(),
+        });
+        let test_connection_factory = ConnectionFactoryImpl::new(connect_test_db().await.unwrap());
 
-//     #[actix_web::test]
-//     async fn test_create_user() {
-//         let body = web::Json(CreateUserRequest {
-//             user_name: "test name".to_string(),
-//         });
-
-//         let resp = create_user::<ConnectionFactoryImpl>(
-//             body,
-//             Data::new(Injector::new(ConnectionFactoryImpl)),
-//         )
-//         .await
-//         .unwrap();
-//         assert_eq!(resp.status(), StatusCode::CREATED);
-//     }
-// }
+        let resp = create_user::<ConnectionFactoryImpl>(body, Data::new(test_connection_factory))
+            .await
+            .unwrap();
+        assert_eq!(resp.status(), StatusCode::CREATED);
+    }
+}

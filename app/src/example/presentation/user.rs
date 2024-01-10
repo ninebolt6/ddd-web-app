@@ -38,10 +38,10 @@ where
     }))
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateUserRequest {
-    user_name: String,
+    pub user_name: String,
 }
 
 async fn create_user<CF>(
@@ -56,29 +56,4 @@ where
     CreateUserInteractor::execute(user_name, connection_factory).await?;
 
     Ok(HttpResponse::Created().finish())
-}
-
-#[cfg(test)]
-mod tests {
-    use actix_web::{
-        http::StatusCode,
-        web::{self, Data},
-    };
-
-    use shared::external::database::connect_test_db;
-
-    use super::*;
-
-    #[actix_web::test]
-    async fn test_create_user() {
-        let body = web::Json(CreateUserRequest {
-            user_name: "test name".to_string(),
-        });
-        let test_connection_factory = ConnectionFactoryImpl::new(connect_test_db().await.unwrap());
-
-        let resp = create_user::<ConnectionFactoryImpl>(body, Data::new(test_connection_factory))
-            .await
-            .unwrap();
-        assert_eq!(resp.status(), StatusCode::CREATED);
-    }
 }

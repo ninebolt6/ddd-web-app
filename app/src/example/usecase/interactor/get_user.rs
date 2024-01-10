@@ -13,8 +13,25 @@ use uuid::Uuid;
 
 pub struct GetUserInteractor {}
 
+pub struct GetUserInteractorOutput {
+    pub id: Uuid,
+    pub name: String,
+}
+
+impl From<UserEntity> for GetUserInteractorOutput {
+    fn from(value: UserEntity) -> Self {
+        Self {
+            id: value.id,
+            name: value.name,
+        }
+    }
+}
+
 impl GetUserInteractor {
-    pub async fn execute<CF>(id: Uuid, connection_factory: Data<CF>) -> Result<UserEntity, APIError>
+    pub async fn execute<CF>(
+        id: Uuid,
+        connection_factory: Data<CF>,
+    ) -> Result<GetUserInteractorOutput, APIError>
     where
         CF: ConnectionFactory,
     {
@@ -30,6 +47,6 @@ impl GetUserInteractor {
             .await?
             .ok_or(APIError::NotFound("Not Found".to_string()))?;
 
-        Ok(user)
+        Ok(GetUserInteractorOutput::from(user))
     }
 }

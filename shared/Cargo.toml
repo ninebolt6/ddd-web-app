@@ -12,6 +12,6 @@ name = "shared"
 actix-web = { workspace = true }
 async-trait = "0.1"
 serde = { workspace = true }
-sqlx = { version = "0.7", features = [ "runtime-tokio", "tls-native-tls", "postgres", "uuid", "chrono" ] }
+sqlx = { workspace = true }
 thiserror = "1.0"
 uuid = { workspace = true }

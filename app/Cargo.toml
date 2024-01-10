@@ -13,3 +13,6 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 shared = { path = "../shared" }
 uuid = { workspace = true }
+
+[dev-dependencies]
+sqlx = { workspace = true }

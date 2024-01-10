@@ -4,14 +4,24 @@ use actix_web::{
     web::{self, Data},
     App,
 };
+use app::example::presentation::user::GetUserResponse;
 use app::route::{auth_routes, public_routes};
-use serde_json::Value;
-use shared::external::database::{connect_db, ConnectionFactoryImpl};
+use shared::external::database::{connect_test_db, ConnectionFactoryImpl};
+use uuid::Uuid;
 
 #[actix_web::test]
 async fn test_get_user() {
     // arrange
-    let pool = connect_db().await.unwrap();
+    let pool = connect_test_db().await.unwrap();
+
+    let user_id = Uuid::new_v4();
+    sqlx::query("INSERT INTO users (id, name) VALUES ($1, $2)")
+        .bind(user_id)
+        .bind("ユーザ名")
+        .execute(&pool)
+        .await
+        .unwrap();
+
     let app = test::init_service(
         App::new()
             .service(
@@ -26,7 +36,7 @@ async fn test_get_user() {
     .await;
 
     let req = test::TestRequest::get()
-        .uri("/api/users/ca1c5eb2-a43a-4cef-80fc-f9abe1623785")
+        .uri(format!("/api/users/{user_id}").as_str())
         .to_request();
 
     // act
@@ -36,14 +46,13 @@ async fn test_get_user() {
     assert_eq!(resp.status(), StatusCode::OK);
 
     let resp_body = read_body(resp).await;
-    let expected = r#"{
-        "id": "ca1c5eb2-a43a-4cef-80fc-f9abe1623785",
-        "name": "test name"
-    }"#
-    .as_bytes();
+    let expected = GetUserResponse {
+        id: user_id,
+        name: "ユーザ名".to_string(),
+    };
 
     assert_eq!(
-        serde_json::from_slice::<Value>(&resp_body).unwrap(),
-        serde_json::from_slice::<Value>(expected).unwrap(),
+        std::str::from_utf8(&resp_body).unwrap(),
+        serde_json::to_string(&expected).unwrap(),
     );
 }

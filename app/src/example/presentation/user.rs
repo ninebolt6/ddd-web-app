@@ -20,8 +20,8 @@ pub fn example_routes(cfg: &mut web::ServiceConfig) {
 
 #[derive(Serialize, Deserialize, PartialEq, Eq, Debug)]
 pub struct GetUserResponse {
-    id: Uuid,
-    name: String,
+    pub id: Uuid,
+    pub name: String,
 }
 
 async fn get_user<CF>(path: web::Path<Uuid>, connection_factory: web::Data<CF>) -> ResponseResult
@@ -60,10 +60,7 @@ where
 
 #[cfg(test)]
 mod tests {
-    use std::str::FromStr;
-
     use actix_web::{
-        body::to_bytes,
         http::StatusCode,
         web::{self, Data},
     };
@@ -71,27 +68,6 @@ mod tests {
     use shared::external::database::connect_test_db;
 
     use super::*;
-
-    // #[actix_web::test]
-    // async fn test_get_user() {
-    //     let id = Uuid::from_str("ca1c5eb2-a43a-4cef-80fc-f9abe1623785").unwrap();
-    //     let path = web::Path::from(id);
-    //     let test_connection_factory = ConnectionFactoryImpl::new(connect_test_db().await.unwrap());
-    //
-    //     let resp = get_user::<ConnectionFactoryImpl>(path, Data::new(test_connection_factory))
-    //         .await
-    //         .unwrap();
-    //
-    //     assert_eq!(resp.status(), StatusCode::OK);
-    //     let resp_body = to_bytes(resp.into_body()).await.unwrap();
-    //     assert_eq!(
-    //         serde_json::from_slice::<GetUserResponse>(&resp_body).unwrap(),
-    //         GetUserResponse {
-    //             id,
-    //             name: "test name".to_string(),
-    //         }
-    //     );
-    // }
 
     #[actix_web::test]
     async fn test_create_user() {

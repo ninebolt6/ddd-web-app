@@ -1,11 +1,10 @@
-use actix_web::web::Data;
+use std::sync::Arc;
+
 use shared::{
     common::error::APIError,
     example::{
         domain::entity::user::UserEntity,
-        infrastructure::database::repository::user_repository::{
-            UserRepository, UserRepositoryImpl,
-        },
+        infrastructure::database::repository::user_repository::UserRepository,
     },
     external::database::ConnectionFactory,
 };
@@ -30,18 +29,18 @@ impl From<UserEntity> for GetUserInteractorOutput {
 impl GetUserInteractor {
     pub async fn execute<CF>(
         id: Uuid,
-        connection_factory: Data<CF>,
+        user_repository: impl UserRepository + Send + Sync,
+        connection_factory: Arc<CF>,
     ) -> Result<GetUserInteractorOutput, APIError>
     where
         CF: ConnectionFactory,
     {
         let user = connection_factory
-            .acquire(move |pool| async move {
+            .acquire(|pool| async move {
                 let mut conn = pool.acquire().await.map_err(|e| {
                     APIError::InfrastructureError(format!("Failed to acquire connection: {}", e))
                 })?;
 
-                let user_repository = UserRepositoryImpl {};
                 user_repository.find_by_id(id, &mut conn).await
             })
             .await?

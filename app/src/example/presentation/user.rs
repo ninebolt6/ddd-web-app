@@ -4,6 +4,7 @@ use uuid::Uuid;
 
 use shared::{
     common::result::ResponseResult,
+    example::infrastructure::database::repository::user_repository::UserRepositoryImpl,
     external::database::{ConnectionFactory, ConnectionFactoryImpl},
 };
 
@@ -29,8 +30,10 @@ where
     CF: ConnectionFactory,
 {
     let id = path.into_inner();
+    let user_repository = UserRepositoryImpl {};
 
-    let output = GetUserInteractor::execute(id, connection_factory).await?;
+    let output =
+        GetUserInteractor::execute(id, user_repository, connection_factory.into_inner()).await?;
 
     Ok(HttpResponse::Ok().json(GetUserResponse {
         id: output.id,
@@ -52,8 +55,14 @@ where
     CF: ConnectionFactory,
 {
     let user_name = &body.user_name;
+    let user_repository = UserRepositoryImpl {};
 
-    CreateUserInteractor::execute(user_name.to_string(), connection_factory).await?;
+    CreateUserInteractor::execute(
+        user_name.to_string(),
+        user_repository,
+        connection_factory.into_inner(),
+    )
+    .await?;
 
     Ok(HttpResponse::Created().finish())
 }

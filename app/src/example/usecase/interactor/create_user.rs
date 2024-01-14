@@ -9,7 +9,6 @@ use shared::{
     },
     external::database::ConnectionFactory,
 };
-use uuid::Uuid;
 
 pub struct CreateUserInteractor {}
 
@@ -24,8 +23,7 @@ impl CreateUserInteractor {
                     APIError::InfrastructureError(format!("Failed to acquire connection: {}", e))
                 })?;
 
-                let id = Uuid::new_v4();
-                let entity = UserEntity::new(id, user_name.to_string());
+                let entity = UserEntity::new(user_name.to_string());
                 let user_repository = UserRepositoryImpl {};
 
                 user_repository.create(entity, &mut conn).await?;

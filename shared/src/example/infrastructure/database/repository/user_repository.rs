@@ -35,7 +35,7 @@ impl UserRepository for UserRepositoryImpl {
             .await
             .map_err(|e| APIError::InfrastructureError(e.to_string()))?;
 
-        let user = user_row.map(|row| UserEntity::new(row.id, row.name));
+        let user = user_row.map(|row| UserEntity::from(row.id, row.name));
         Ok(user)
     }
 

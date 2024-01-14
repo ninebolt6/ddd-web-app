@@ -8,7 +8,14 @@ pub struct UserEntity {
 }
 
 impl UserEntity {
-    pub fn new(id: Uuid, name: String) -> Self {
+    pub fn new(name: String) -> Self {
+        Self {
+            id: Uuid::new_v4(),
+            name,
+        }
+    }
+
+    pub fn from(id: Uuid, name: String) -> Self {
         Self { id, name }
     }
 }

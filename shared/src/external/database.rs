@@ -27,16 +27,16 @@ pub async fn connect_test_db() -> Result<PgPool, DbError> {
 }
 
 #[async_trait]
-pub trait ConnectionFactory<'a> {
+pub trait ConnectionFactory {
     async fn acquire<F, T, Fut>(&self, block: F) -> Result<T, APIError>
     where
-        F: FnOnce(PgPool) -> Fut + Send + Sync + 'a,
-        Fut: Future<Output = Result<T, APIError>> + Send + 'a;
+        F: FnOnce(PgPool) -> Fut + Send + Sync,
+        Fut: Future<Output = Result<T, APIError>> + Send;
 
     async fn begin_transaction<'b, F, T>(&self, block: F) -> Result<T, APIError>
     where
         F: for<'e> FnMut(&'e mut PgConnection) -> BoxFuture<'e, Result<T, APIError>> + Send,
-        T: Send + 'a;
+        T: Send;
 }
 
 pub trait DbPool {}
@@ -53,11 +53,11 @@ impl ConnectionFactoryImpl<PgPool> {
 }
 
 #[async_trait]
-impl<'a> ConnectionFactory<'a> for ConnectionFactoryImpl<PgPool> {
+impl ConnectionFactory for ConnectionFactoryImpl<PgPool> {
     async fn acquire<F, T, Fut>(&self, block: F) -> Result<T, APIError>
     where
         F: FnOnce(PgPool) -> Fut + Send + Sync,
-        Fut: Future<Output = Result<T, APIError>> + Send + 'a,
+        Fut: Future<Output = Result<T, APIError>> + Send,
     {
         let result = block(self.pool.clone())
             .await
@@ -69,7 +69,7 @@ impl<'a> ConnectionFactory<'a> for ConnectionFactoryImpl<PgPool> {
     async fn begin_transaction<'b, F, T>(&self, mut block: F) -> Result<T, APIError>
     where
         F: for<'e> FnMut(&'e mut PgConnection) -> BoxFuture<'e, Result<T, APIError>> + Send,
-        T: Send + 'a,
+        T: Send,
     {
         let mut transaction = self
             .pool

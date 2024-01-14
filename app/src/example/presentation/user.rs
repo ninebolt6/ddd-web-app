@@ -26,7 +26,7 @@ pub struct GetUserResponse {
 
 async fn get_user<CF>(path: web::Path<Uuid>, connection_factory: web::Data<CF>) -> ResponseResult
 where
-    CF: ConnectionFactory<'static>,
+    CF: ConnectionFactory,
 {
     let id = path.into_inner();
 
@@ -49,7 +49,7 @@ async fn create_user<CF>(
     connection_factory: web::Data<CF>,
 ) -> ResponseResult
 where
-    CF: ConnectionFactory<'static>,
+    CF: ConnectionFactory,
 {
     let user_name = &body.user_name;
 

@@ -18,7 +18,7 @@ impl CreateUserInteractor {
         connection_factory: Data<CF>,
     ) -> Result<(), APIError>
     where
-        CF: ConnectionFactory<'static>,
+        CF: ConnectionFactory,
     {
         connection_factory
             .begin_transaction(|tx| {

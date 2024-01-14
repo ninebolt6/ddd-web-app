@@ -33,7 +33,7 @@ impl GetUserInteractor {
         connection_factory: Data<CF>,
     ) -> Result<GetUserInteractorOutput, APIError>
     where
-        CF: ConnectionFactory<'static>,
+        CF: ConnectionFactory,
     {
         let user = connection_factory
             .acquire(move |pool| async move {

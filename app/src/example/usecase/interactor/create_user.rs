@@ -13,24 +13,20 @@ use shared::{
 pub struct CreateUserInteractor {}
 
 impl CreateUserInteractor {
-    pub async fn execute<CF>(user_name: &str, connection_factory: Data<CF>) -> Result<(), APIError>
+    pub async fn execute<CF>(
+        user_name: String,
+        connection_factory: Data<CF>,
+    ) -> Result<(), APIError>
     where
-        CF: ConnectionFactory,
+        CF: ConnectionFactory<'static>,
     {
         connection_factory
-            .acquire(|pool| async move {
-                let mut conn = pool.acquire().await.map_err(|e| {
-                    APIError::InfrastructureError(format!("Failed to acquire connection: {}", e))
-                })?;
-
-                let entity = UserEntity::new(user_name.to_string());
+            .begin_transaction(|tx| {
                 let user_repository = UserRepositoryImpl {};
+                let entity = UserEntity::new(user_name.to_owned());
 
-                user_repository.create(entity, &mut conn).await?;
-
-                Ok(())
+                Box::pin(async move { user_repository.create(entity, tx).await })
             })
-            .await?;
-        Ok(())
+            .await
     }
 }

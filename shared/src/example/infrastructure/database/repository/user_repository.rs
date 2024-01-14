@@ -43,7 +43,7 @@ impl UserRepository for UserRepositoryImpl {
         sqlx::query("INSERT INTO users (id, name) VALUES ($1, $2)")
             .bind(entity.id)
             .bind(entity.name)
-            .execute(&mut *conn)
+            .execute(conn)
             .await
             .map_err(|e| APIError::InfrastructureError(e.to_string()))?;
         Ok(())

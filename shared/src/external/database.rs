@@ -2,8 +2,9 @@ use std::future::Future;
 use std::time::Duration;
 
 use async_trait::async_trait;
+use futures::future::BoxFuture;
 use sqlx::postgres::PgPoolOptions;
-use sqlx::{Error as DbError, PgPool, Postgres, Transaction};
+use sqlx::{Error as DbError, PgConnection, PgPool};
 
 use crate::common::error::APIError;
 
@@ -26,35 +27,37 @@ pub async fn connect_test_db() -> Result<PgPool, DbError> {
 }
 
 #[async_trait]
-pub trait ConnectionFactory {
+pub trait ConnectionFactory<'a> {
     async fn acquire<F, T, Fut>(&self, block: F) -> Result<T, APIError>
     where
-        F: FnOnce(PgPool) -> Fut + Send + Sync,
-        Fut: Future<Output = Result<T, APIError>> + Send;
+        F: FnOnce(PgPool) -> Fut + Send + Sync + 'a,
+        Fut: Future<Output = Result<T, APIError>> + Send + 'a;
 
-    async fn begin_transaction<F, T, Fut>(&self, block: F) -> Result<T, APIError>
+    async fn begin_transaction<'b, F, T>(&self, block: F) -> Result<T, APIError>
     where
-        F: FnOnce(&mut Transaction<'_, Postgres>) -> Fut + Send + Sync,
-        Fut: Future<Output = Result<T, APIError>> + Send,
-        T: Send;
+        F: for<'e> FnMut(&'e mut PgConnection) -> BoxFuture<'e, Result<T, APIError>> + Send,
+        T: Send + 'a;
 }
 
-pub struct ConnectionFactoryImpl {
-    pool: PgPool,
+pub trait DbPool {}
+impl DbPool for PgPool {}
+
+pub struct ConnectionFactoryImpl<T: DbPool = PgPool> {
+    pool: T,
 }
 
-impl ConnectionFactoryImpl {
+impl ConnectionFactoryImpl<PgPool> {
     pub fn new(pool: PgPool) -> Self {
         Self { pool }
     }
 }
 
 #[async_trait]
-impl ConnectionFactory for ConnectionFactoryImpl {
+impl<'a> ConnectionFactory<'a> for ConnectionFactoryImpl<PgPool> {
     async fn acquire<F, T, Fut>(&self, block: F) -> Result<T, APIError>
     where
         F: FnOnce(PgPool) -> Fut + Send + Sync,
-        Fut: Future<Output = Result<T, APIError>> + Send,
+        Fut: Future<Output = Result<T, APIError>> + Send + 'a,
     {
         let result = block(self.pool.clone())
             .await
@@ -63,11 +66,10 @@ impl ConnectionFactory for ConnectionFactoryImpl {
         Ok(result)
     }
 
-    async fn begin_transaction<F, T, Fut>(&self, block: F) -> Result<T, APIError>
+    async fn begin_transaction<'b, F, T>(&self, mut block: F) -> Result<T, APIError>
     where
-        F: FnOnce(&mut Transaction<'_, Postgres>) -> Fut + Send + Sync,
-        Fut: Future<Output = Result<T, APIError>> + Send,
-        T: Send,
+        F: for<'e> FnMut(&'e mut PgConnection) -> BoxFuture<'e, Result<T, APIError>> + Send,
+        T: Send + 'a,
     {
         let mut transaction = self
             .pool

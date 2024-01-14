@@ -33,10 +33,10 @@ impl GetUserInteractor {
         connection_factory: Data<CF>,
     ) -> Result<GetUserInteractorOutput, APIError>
     where
-        CF: ConnectionFactory,
+        CF: ConnectionFactory<'static>,
     {
         let user = connection_factory
-            .acquire(|pool| async move {
+            .acquire(move |pool| async move {
                 let mut conn = pool.acquire().await.map_err(|e| {
                     APIError::InfrastructureError(format!("Failed to acquire connection: {}", e))
                 })?;

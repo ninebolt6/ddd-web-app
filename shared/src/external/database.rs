@@ -17,15 +17,6 @@ pub async fn connect_db() -> Result<PgPool, DbError> {
         .await
 }
 
-pub async fn connect_test_db() -> Result<PgPool, DbError> {
-    PgPoolOptions::new()
-        .min_connections(1)
-        .max_connections(10)
-        .acquire_timeout(Duration::from_secs(8))
-        .connect("postgresql://testUser:testUserPassword@localhost:55432/postgres")
-        .await
-}
-
 #[async_trait]
 pub trait ConnectionFactory {
     async fn acquire<F, T, Fut>(&self, block: F) -> Result<T, APIError>

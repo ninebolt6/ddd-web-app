@@ -6,8 +6,10 @@ use actix_web::{
 };
 use app::example::presentation::user::{CreateUserRequest, GetUserResponse};
 use app::route::{auth_routes, public_routes};
-use shared::external::database::{connect_test_db, ConnectionFactoryImpl};
+use shared::external::database::ConnectionFactoryImpl;
 use uuid::Uuid;
+
+use crate::helper::connect_test_db;
 
 #[actix_web::test]
 async fn test_get_user() {

@@ -20,12 +20,14 @@ impl CreateUserInteractor {
     where
         CF: ConnectionFactory,
     {
+        let user_repository = UserRepositoryImpl {};
+
         connection_factory
             .begin_transaction(|tx| {
-                let user_repository = UserRepositoryImpl {};
-                let entity = UserEntity::new(user_name.to_owned());
-
-                Box::pin(async move { user_repository.create(entity, tx).await })
+                Box::pin(async move {
+                    let entity = UserEntity::new(user_name);
+                    user_repository.create(entity, tx).await
+                })
             })
             .await
     }

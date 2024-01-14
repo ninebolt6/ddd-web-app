@@ -1,12 +1,14 @@
 use std::future::Future;
+use std::pin::Pin;
 use std::time::Duration;
 
 use async_trait::async_trait;
-use futures::future::BoxFuture;
 use sqlx::postgres::PgPoolOptions;
 use sqlx::{Error as DbError, PgConnection, PgPool};
 
 use crate::common::error::APIError;
+
+type BoxFuture<'a, T> = Pin<Box<dyn Future<Output = T> + Send + 'a>>;
 
 pub async fn connect_db() -> Result<PgPool, DbError> {
     PgPoolOptions::new()
@@ -26,7 +28,7 @@ pub trait ConnectionFactory {
 
     async fn begin_transaction<'b, F, T>(&self, block: F) -> Result<T, APIError>
     where
-        F: for<'e> FnMut(&'e mut PgConnection) -> BoxFuture<'e, Result<T, APIError>> + Send,
+        F: for<'e> FnOnce(&'e mut PgConnection) -> BoxFuture<'e, Result<T, APIError>> + Send,
         T: Send;
 }
 
@@ -57,9 +59,9 @@ impl ConnectionFactory for ConnectionFactoryImpl<PgPool> {
         Ok(result)
     }
 
-    async fn begin_transaction<'b, F, T>(&self, mut block: F) -> Result<T, APIError>
+    async fn begin_transaction<'b, F, T>(&self, block: F) -> Result<T, APIError>
     where
-        F: for<'e> FnMut(&'e mut PgConnection) -> BoxFuture<'e, Result<T, APIError>> + Send,
+        F: for<'e> FnOnce(&'e mut PgConnection) -> BoxFuture<'e, Result<T, APIError>> + Send,
         T: Send,
     {
         let mut transaction = self

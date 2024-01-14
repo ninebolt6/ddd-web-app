@@ -7,7 +7,6 @@ use actix_web::{
 use app::example::presentation::user::{CreateUserRequest, GetUserResponse};
 use app::route::{auth_routes, public_routes};
 use shared::external::database::{connect_test_db, ConnectionFactoryImpl};
-use sqlx::FromRow;
 use uuid::Uuid;
 
 #[actix_web::test]
@@ -92,12 +91,7 @@ async fn test_create_user() {
     // assert
     assert_eq!(resp.status(), StatusCode::CREATED);
 
-    #[derive(FromRow)]
-    struct UserRow {
-        id: Uuid,
-        name: String,
-    }
-    let result = sqlx::query_as::<_, UserRow>("SELECT id, name FROM users WHERE name = $1")
+    let result = sqlx::query("SELECT id, name FROM users WHERE name = $1")
         .bind(req_body.user_name)
         .fetch_one(&pool)
         .await;
